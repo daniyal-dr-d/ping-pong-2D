@@ -71,7 +71,6 @@
             document.getElementById('menu').style.display = 'none';
             document.getElementById('ui').style.display = 'flex';
             
-            // Fix: Explicitly show/hide right controls for 2-player mobile support
             if (mode === 2) {
                 document.getElementById('right-ctrl').classList.remove('hidden');
             } else {
@@ -92,11 +91,18 @@
         function update() {
             if (!running) return;
             
-            // Player 1: Strictly W and S
-            if (keys['KeyW'] && p1.y > 0) p1.y -= 8;
-            if (keys['KeyS'] && p1.y < canvas.height - p1.h) p1.y += 8;
+            // Player 1 movement logic
+            if (mode === 1) {
+                // Single Player: Accept BOTH W/S and Arrow keys for Player 1
+                if ((keys['KeyW'] || keys['ArrowUp']) && p1.y > 0) p1.y -= 8;
+                if ((keys['KeyS'] || keys['ArrowDown']) && p1.y < canvas.height - p1.h) p1.y += 8;
+            } else {
+                // Local Versus Mode: Split controls strictly
+                if (keys['KeyW'] && p1.y > 0) p1.y -= 8;
+                if (keys['KeyS'] && p1.y < canvas.height - p1.h) p1.y += 8;
+            }
 
-            // Player 2: Strictly Arrow Keys
+            // Player 2 / AI logic
             if (mode === 2) {
                 if (keys['ArrowUp'] && p2.y > 0) p2.y -= 8;
                 if (keys['ArrowDown'] && p2.y < canvas.height - p2.h) p2.y += 8;
