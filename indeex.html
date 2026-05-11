@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pro Pong 2D</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; background: #020617; color: #fff; font-family: sans-serif; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; touch-action: none; }
+        canvas { border: 2px solid #1e293b; background: #000; border-radius: 8px; box-shadow: 0 0 20px rgba(59, 130, 246, 0.2); max-width: 95vw; max-height: 70vh; object-fit: contain; }
+        .btn { width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; transition: all 0.2s; }
+        .btn:active { transform: scale(0.95); }
+        .touch-btn { width: 70px; height: 70px; background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; user-select: none; -webkit-tap-highlight-color: transparent; font-size: 24px; font-weight: bold; }
+        .touch-btn:active { background: rgba(59, 130, 246, 0.4); border-color: #3b82f6; }
+    </style>
+</head>
+<body>
+
+    <!-- Main Menu -->
+    <div id="menu" class="fixed inset-0 bg-slate-950 z-10 flex flex-col items-center justify-center p-4">
+        <h1 class="text-5xl md:text-6xl font-black italic mb-10 text-blue-500 tracking-tighter">PRO PONG</h1>
+        <div class="w-64">
+            <button onclick="start(1)" class="btn bg-blue-600 hover:bg-blue-500">Single Player</button>
+            <button onclick="start(2)" class="btn bg-zinc-800 hover:bg-zinc-700">Local Versus</button>
+            <p class="text-zinc-600 text-[10px] text-center mt-4 uppercase font-mono">Championship Edition</p>
+        </div>
+    </div>
+
+    <!-- Game UI -->
+    <div id="ui" class="hidden flex flex-col items-center w-full h-full justify-center p-2">
+        <!-- SCORING SYSTEM -->
+        <div class="flex gap-12 mb-4 text-5xl md:text-6xl font-mono font-black italic drop-shadow-lg">
+            <div id="s1" class="text-blue-500">0</div>
+            <div id="s2" class="text-red-500">0</div>
+        </div>
+        
+        <div class="relative flex items-center justify-center w-full">
+            <!-- Left Controls (Player 1) -->
+            <div id="left-ctrl" class="absolute left-2 md:hidden flex flex-col gap-4 z-20">
+                <div class="touch-btn" ontouchstart="keys['KeyW']=true" ontouchend="keys['KeyW']=false">↑</div>
+                <div class="touch-btn" ontouchstart="keys['KeyS']=true" ontouchend="keys['KeyS']=false">↓</div>
+            </div>
+
+            <canvas id="pong"></canvas>
+
+            <!-- Right Controls (Player 2) -->
+            <div id="right-ctrl" class="absolute right-2 md:hidden flex flex-col gap-4 z-20">
+                <div class="touch-btn" ontouchstart="keys['ArrowUp']=true" ontouchend="keys['ArrowUp']=false">↑</div>
+                <div class="touch-btn" ontouchstart="keys['ArrowDown']=true" ontouchend="keys['ArrowDown']=false">↓</div>
+            </div>
+        </div>
+
+        <button onclick="location.reload()" class="mt-8 text-zinc-500 hover:text-white text-[10px] uppercase tracking-widest font-bold">Exit Game</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('pong');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = 800;
+        canvas.height = 450;
+
+        let running = false, mode = 1, score1 = 0, score2 = 0;
+        const p1 = { x: 10, y: 175, w: 10, h: 100, color: '#3b82f6' };
+        const p2 = { x: 780, y: 175, w: 10, h: 100, color: '#ef4444' };
+        const ball = { x: 400, y: 225, r: 7, vx: 5, vy: 5, speed: 5, color: '#facc15' };
+        const keys = {};
+
+        function start(m) {
+            mode = m;
+            document.getElementById('menu').style.display = 'none';
+            document.getElementById('ui').style.display = 'flex';
+            
+            // Fix: Explicitly show/hide right controls for 2-player mobile support
+            if (mode === 2) {
+                document.getElementById('right-ctrl').classList.remove('hidden');
+            } else {
+                document.getElementById('right-ctrl').classList.add('hidden');
+            }
+
+            running = true;
+            resetBall();
+            loop();
+        }
+
+        function resetBall() {
+            ball.x = 400; ball.y = 225; ball.speed = 5;
+            ball.vx = (Math.random() > 0.5 ? 1 : -1) * ball.speed;
+            ball.vy = (Math.random() * 2 - 1) * ball.speed;
+        }
+
+        function update() {
+            if (!running) return;
+            
+            // Player 1: Strictly W and S
+            if (keys['KeyW'] && p1.y > 0) p1.y -= 8;
+            if (keys['KeyS'] && p1.y < canvas.height - p1.h) p1.y += 8;
+
+            // Player 2: Strictly Arrow Keys
+            if (mode === 2) {
+                if (keys['ArrowUp'] && p2.y > 0) p2.y -= 8;
+                if (keys['ArrowDown'] && p2.y < canvas.height - p2.h) p2.y += 8;
+            } else {
+                // AI Logic for Single Player
+                let target = ball.y - p2.h / 2;
+                p2.y += (target - p2.y) * 0.1;
+            }
+
+            ball.x += ball.vx; ball.y += ball.vy;
+            if (ball.y < 0 || ball.y > canvas.height) ball.vy *= -1;
+
+            let pad = (ball.x < 400) ? p1 : p2;
+            if (ball.x > pad.x && ball.x < pad.x + pad.w && ball.y > pad.y && ball.y < pad.y + pad.h) {
+                ball.vx *= -1.05;
+                let hitPos = (ball.y - (pad.y + pad.h/2)) / (pad.h/2);
+                ball.vy = hitPos * ball.speed;
+            }
+
+            if (ball.x < 0) { score2++; document.getElementById('s2').textContent = score2; resetBall(); }
+            if (ball.x > 800) { score1++; document.getElementById('s1').textContent = score1; resetBall(); }
+            
+            if (score1 >= 10 || score2 >= 10) {
+                running = false;
+                setTimeout(() => {
+                    alert(score1 >= 10 ? "BLUE WINS!" : "RED WINS!");
+                    location.reload();
+                }, 100);
+            }
+        }
+
+        function draw() {
+            ctx.fillStyle = '#020617'; ctx.fillRect(0,0,800,450);
+            ctx.strokeStyle = '#1e293b';
+            ctx.setLineDash([5, 15]);
+            ctx.beginPath(); ctx.moveTo(400,0); ctx.lineTo(400,450); ctx.stroke();
+            ctx.fillStyle = p1.color; ctx.fillRect(p1.x, p1.y, p1.w, p1.h);
+            ctx.fillStyle = p2.color; ctx.fillRect(p2.x, p2.y, p2.w, p2.h);
+            ctx.fillStyle = ball.color; ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); ctx.fill();
+        }
+
+        function loop() {
+            if(!running) return;
+            update(); draw(); requestAnimationFrame(loop);
+        }
+
+        window.addEventListener('keydown', e => keys[e.code] = true);
+        window.addEventListener('keyup', e => keys[e.code] = false);
+
+        document.addEventListener('touchstart', (e) => {
+            if (e.target.className.includes('touch-btn')) e.preventDefault();
+        }, { passive: false });
+    </script>
+</body>
+</html>
