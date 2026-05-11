@@ -2,210 +2,137 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Pong 2D - Global Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pro Pong 2D</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <style>
+        body { margin: 0; background: #020617; color: #fff; font-family: sans-serif; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; touch-action: none; }
+        canvas { border: 2px solid #1e293b; background: #000; border-radius: 8px; box-shadow: 0 0 20px rgba(59, 130, 246, 0.2); max-width: 95vw; max-height: 70vh; object-fit: contain; }
+        .btn { width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; transition: all 0.2s; }
+        .btn:active { transform: scale(0.95); }
+        .touch-btn { width: 70px; height: 70px; background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; user-select: none; -webkit-tap-highlight-color: transparent; font-size: 24px; font-weight: bold; }
+        .touch-btn:active { background: rgba(59, 130, 246, 0.4); border-color: #3b82f6; }
+    </style>
+</head>
+<body>
 
-        // --- FIREBASE SETUP ---
-        let firebaseConfig, appId, auth, db, user;
-        let isOffline = false;
+    <!-- Main Menu -->
+    <div id="menu" class="fixed inset-0 bg-slate-950 z-10 flex flex-col items-center justify-center p-4">
+        <h1 class="text-5xl md:text-6xl font-black italic mb-10 text-blue-500 tracking-tighter">PRO PONG</h1>
+        <div class="w-64">
+            <button onclick="start(1)" class="btn bg-blue-600 hover:bg-blue-500">Single Player</button>
+            <button onclick="start(2)" class="btn bg-zinc-800 hover:bg-zinc-700">Local Versus</button>
+            <p class="text-zinc-600 text-[10px] text-center mt-4 uppercase font-mono">Championship Edition</p>
+        </div>
+    </div>
 
-        try {
-            firebaseConfig = JSON.parse(__firebase_config);
-            appId = typeof __app_id !== 'undefined' ? __app_id : 'propong-global';
-            const app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-        } catch (e) {
-            isOffline = true;
-            console.log("Running in local mode.");
-        }
-
-        // --- GAME CONSTANTS ---
-        const W = 800, H = 450, P_W = 10, P_H = 100, B_SIZE = 7;
-        const P_SPEED = 8, WIN_SCORE = 10;
+    <!-- Game UI -->
+    <div id="ui" class="hidden flex flex-col items-center w-full h-full justify-center p-2">
+        <!-- SCORING SYSTEM -->
+        <div class="flex gap-12 mb-4 text-5xl md:text-6xl font-mono font-black italic drop-shadow-lg">
+            <div id="s1" class="text-blue-500">0</div>
+            <div id="s2" class="text-red-500">0</div>
+        </div>
         
-        let running = false, mode = 1, score1 = 0, score2 = 0;
-        let role = null, roomId = null, connecting = false;
+        <div class="relative flex items-center justify-center w-full">
+            <!-- Left Controls (Player 1) -->
+            <div id="left-ctrl" class="absolute left-2 md:hidden flex flex-col gap-4 z-20">
+                <div class="touch-btn" ontouchstart="keys['KeyW']=true" ontouchend="keys['KeyW']=false">↑</div>
+                <div class="touch-btn" ontouchstart="keys['KeyS']=true" ontouchend="keys['KeyS']=false">↓</div>
+            </div>
 
-        const p1 = { x: 10, y: H/2-P_H/2, w: P_W, h: P_H, color: '#3b82f6' };
-        const p2 = { x: W-20, y: H/2-P_H/2, w: P_W, h: P_H, color: '#ef4444' };
-        const ball = { x: W/2, y: H/2, r: B_SIZE, vx: 5, vy: 5, speed: 5, color: '#facc15' };
-        const keys = {};
+            <canvas id="pong"></canvas>
 
+            <!-- Right Controls (Player 2) -->
+            <div id="right-ctrl" class="absolute right-2 md:hidden flex flex-col gap-4 z-20">
+                <div class="touch-btn" ontouchstart="keys['ArrowUp']=true" ontouchend="keys['ArrowUp']=false">↑</div>
+                <div class="touch-btn" ontouchstart="keys['ArrowDown']=true" ontouchend="keys['ArrowDown']=false">↓</div>
+            </div>
+        </div>
+
+        <button onclick="location.reload()" class="mt-8 text-zinc-500 hover:text-white text-[10px] uppercase tracking-widest font-bold">Exit Game</button>
+    </div>
+
+    <script>
         const canvas = document.getElementById('pong');
         const ctx = canvas.getContext('2d');
-        canvas.width = W; canvas.height = H;
-
-        // --- AUTH ---
-        if (!isOffline) {
-            const initAuth = async () => {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            };
-            initAuth();
-            onAuthStateChanged(auth, u => {
-                user = u;
-                if(u) {
-                    document.getElementById('status').textContent = "SYSTEM ONLINE";
-                    document.getElementById('btn-create').disabled = false;
-                    document.getElementById('btn-create').style.opacity = "1";
-                }
-            });
-        }
-
-        // --- MULTIPLAYER LOGIC ---
-        window.createRoom = async () => {
-            if (isOffline || !user || connecting) return;
-            connecting = true;
-            const id = Math.random().toString(36).substring(2, 7).toUpperCase();
-            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', id);
-            
-            // Fast Transition: Move to game UI immediately
-            roomId = id;
-            role = 'p1';
-            document.getElementById('room-input').value = id;
-            document.getElementById('status').textContent = "CODE CREATED - WAITING...";
-            
-            await setDoc(ref, {
-                p1Y: p1.y, p2Y: p2.y,
-                ball: { x: ball.x, y: ball.y, vx: ball.vx, vy: ball.vy },
-                scores: { s1: 0, s2: 0 },
-                status: 'waiting'
-            });
-            
-            listen(id);
-        };
         
-            const id = document.getElementById('room-input').value.toUpperCase();
-            if (isOffline || !id || connecting) return;
-            connecting = true;
-            document.getElementById('status').textContent = "CONNECTING...";
-            
-            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', id);
-            const snap = await getDoc(ref);
-            if (snap.exists() && snap.data().status === 'waiting') {
-                roomId = id;
-                role = 'p2';
-                await updateDoc(ref, { status: 'playing' });
-                listen(id);
-                start(3);
-            } else {
-                document.getElementById('status').textContent = "ROOM NOT FOUND";
-                connecting = false;
-            }
-        };
+        canvas.width = 800;
+        canvas.height = 450;
 
-        window.copyCode = () => {
-            const input = document.getElementById('room-input');
-            input.select();
-            document.execCommand('copy');
-            const status = document.getElementById('status');
-            const oldText = status.textContent;
-            status.textContent = "COPIED TO CLIPBOARD!";
-            setTimeout(() => status.textContent = oldText, 2000);
-        };
+        let running = false, mode = 1, score1 = 0, score2 = 0;
+        const p1 = { x: 10, y: 175, w: 10, h: 100, color: '#3b82f6' };
+        const p2 = { x: 780, y: 175, w: 10, h: 100, color: '#ef4444' };
+        const ball = { x: 400, y: 225, r: 7, vx: 5, vy: 5, speed: 5, color: '#facc15' };
+        const keys = {};
 
-        function listen(id) {
-            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', id);
-            onSnapshot(ref, (d) => {
-                const data = d.data();
-                if (!data) return;
-                
-                // Trigger game start immediately when P2 joins
-                if (data.status === 'playing' && !running) {
-                    start(3);
-                }
-                
-                if (role === 'p2') {
-                    p1.y = data.p1Y;
-                    ball.x = data.ball.x; ball.y = data.ball.y;
-                    score1 = data.scores.s1; score2 = data.scores.s2;
-                } else {
-                    p2.y = data.p2Y;
-                }
-                
-                document.getElementById('s1').textContent = data.scores.s1;
-                document.getElementById('s2').textContent = data.scores.s2;
-            }, (err) => console.error("Sync error:", err));
-        }
-
-        async function sync() {
-            if (isOffline || mode !== 3 || !roomId) return;
-            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
-            const up = {};
-            if (role === 'p1') {
-                up.p1Y = p1.y;
-                up.ball = { x: ball.x, y: ball.y, vx: ball.vx, vy: ball.vy };
-                up['scores.s1'] = score1; up['scores.s2'] = score2;
-            } else {
-                up.p2Y = p2.y;
-            }
-            await updateDoc(ref, up);
-        }
-
-        // --- CORE ENGINE ---
-        window.start = (m) => {
+        function start(m) {
             mode = m;
             document.getElementById('menu').style.display = 'none';
-            document.getElementById('multi-menu').style.display = 'none';
             document.getElementById('ui').style.display = 'flex';
+            
+            // Fix: Explicitly show/hide right controls for 2-player mobile support
+            if (mode === 2) {
+                document.getElementById('right-ctrl').classList.remove('hidden');
+            } else {
+                document.getElementById('right-ctrl').classList.add('hidden');
+            }
+
             running = true;
             resetBall();
             loop();
-        };
-
-        window.showMulti = () => {
-            document.getElementById('menu').style.display = 'none';
-            document.getElementById('multi-menu').style.display = 'flex';
-        };
+        }
 
         function resetBall() {
-            ball.x = W/2; ball.y = H/2; ball.speed = 5;
+            ball.x = 400; ball.y = 225; ball.speed = 5;
             ball.vx = (Math.random() > 0.5 ? 1 : -1) * ball.speed;
             ball.vy = (Math.random() * 2 - 1) * ball.speed;
         }
 
         function update() {
             if (!running) return;
-            // P1 movement
-            if (role === 'p1' || mode !== 3) {
-                if ((keys['KeyW'] || keys['ArrowUp']) && p1.y > 0) p1.y -= P_SPEED;
-                if ((keys['KeyS'] || keys['ArrowDown']) && p1.y < H - p1.h) p1.y += P_SPEED;
-            }
-            // P2 movement
-            if (mode === 2 || (mode === 3 && role === 'p2')) {
-                if (keys['ArrowUp'] && p2.y > 0) p2.y -= P_SPEED;
-                if (keys['ArrowDown'] && p2.y < H - p2.h) p2.y += P_SPEED;
-            } else if (mode === 1) {
-                p2.y += (ball.y - (p2.y + p2.h/2)) * 0.1;
+            
+            // Player 1: Strictly W and S
+            if (keys['KeyW'] && p1.y > 0) p1.y -= 8;
+            if (keys['KeyS'] && p1.y < canvas.height - p1.h) p1.y += 8;
+
+            // Player 2: Strictly Arrow Keys
+            if (mode === 2) {
+                if (keys['ArrowUp'] && p2.y > 0) p2.y -= 8;
+                if (keys['ArrowDown'] && p2.y < canvas.height - p2.h) p2.y += 8;
+            } else {
+                // AI Logic for Single Player
+                let target = ball.y - p2.h / 2;
+                p2.y += (target - p2.y) * 0.1;
             }
 
-            // Physics (P1 handles ball in multiplayer to prevent desync)
-            if (mode !== 3 || role === 'p1') {
-                ball.x += ball.vx; ball.y += ball.vy;
-                if (ball.y < 0 || ball.y > H) ball.vy *= -1;
-                let pad = (ball.vx < 0) ? p1 : p2;
-                if (ball.x > pad.x && ball.x < pad.x + pad.w && ball.y > pad.y && ball.y < pad.y + pad.h) {
-                    ball.vx *= -1.05;
-                }
-                if (ball.x < 0) { score2++; resetBall(); }
-                if (ball.x > W) { score1++; resetBall(); }
-                document.getElementById('s1').textContent = score1;
-                document.getElementById('s2').textContent = score2;
+            ball.x += ball.vx; ball.y += ball.vy;
+            if (ball.y < 0 || ball.y > canvas.height) ball.vy *= -1;
+
+            let pad = (ball.x < 400) ? p1 : p2;
+            if (ball.x > pad.x && ball.x < pad.x + pad.w && ball.y > pad.y && ball.y < pad.y + pad.h) {
+                ball.vx *= -1.05;
+                let hitPos = (ball.y - (pad.y + pad.h/2)) / (pad.h/2);
+                ball.vy = hitPos * ball.speed;
             }
-            if (mode === 3) sync();
+
+            if (ball.x < 0) { score2++; document.getElementById('s2').textContent = score2; resetBall(); }
+            if (ball.x > 800) { score1++; document.getElementById('s1').textContent = score1; resetBall(); }
+            
+            if (score1 >= 10 || score2 >= 10) {
+                running = false;
+                setTimeout(() => {
+                    alert(score1 >= 10 ? "BLUE WINS!" : "RED WINS!");
+                    location.reload();
+                }, 100);
+            }
         }
 
         function draw() {
-            ctx.fillStyle = '#020617'; ctx.fillRect(0,0,W,H);
+            ctx.fillStyle = '#020617'; ctx.fillRect(0,0,800,450);
+            ctx.strokeStyle = '#1e293b';
+            ctx.setLineDash([5, 15]);
+            ctx.beginPath(); ctx.moveTo(400,0); ctx.lineTo(400,450); ctx.stroke();
             ctx.fillStyle = p1.color; ctx.fillRect(p1.x, p1.y, p1.w, p1.h);
             ctx.fillStyle = p2.color; ctx.fillRect(p2.x, p2.y, p2.w, p2.h);
             ctx.fillStyle = ball.color; ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); ctx.fill();
@@ -218,45 +145,10 @@
 
         window.addEventListener('keydown', e => keys[e.code] = true);
         window.addEventListener('keyup', e => keys[e.code] = false);
+
+        document.addEventListener('touchstart', (e) => {
+            if (e.target.className.includes('touch-btn')) e.preventDefault();
+        }, { passive: false });
     </script>
-    <style>
-        body { margin: 0; background: #020617; color: #fff; font-family: sans-serif; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; }
-        canvas { border: 4px solid #1e293b; background: #000; border-radius: 8px; box-shadow: 0 0 40px rgba(0,0,0,0.5); }
-        .btn { width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; transition: all 0.2s; }
-        .btn:active { transform: scale(0.98); }
-    </style>
-</head>
-<body>
-    <div id="menu" class="fixed inset-0 bg-slate-950 z-10 flex flex-col items-center justify-center p-4">
-        <h1 class="text-6xl font-black italic mb-10 text-blue-500">PRO PONG</h1>
-        <div class="w-64">
-            <button onclick="start(1)" class="btn bg-blue-600 hover:bg-blue-500">Single Player</button>
-            <button onclick="start(2)" class="btn bg-zinc-800 hover:bg-zinc-700">Local Versus</button>
-            <button onclick="showMulti()" class="btn bg-emerald-600 hover:bg-emerald-500">Global Multiplayer</button>
-        </div>
-    </div>
-
-    <div id="multi-menu" class="fixed inset-0 bg-slate-950 z-10 hidden flex flex-col items-center justify-center p-4">
-        <div class="bg-zinc-900 p-8 rounded-2xl w-72 text-center border border-zinc-800 shadow-2xl">
-            <button id="btn-create" disabled style="opacity: 0.5" onclick="createRoom()" class="btn bg-white text-black mb-4">Create Room</button>
-            <div class="relative mb-4">
-                <input id="room-input" type="text" placeholder="CODE" class="w-full bg-black border border-zinc-700 p-3 rounded-lg text-center font-mono text-xl uppercase text-emerald-400">
-                <button onclick="copyCode()" class="absolute right-2 top-2 text-[10px] bg-zinc-800 px-2 py-1 rounded text-zinc-400 hover:text-white">COPY</button>
-            </div>
-            <button onclick="joinRoom()" class="btn bg-blue-600 hover:bg-blue-500">Join Room</button>
-            <div id="status" class="text-[10px] text-blue-400 mt-2 font-mono uppercase tracking-widest">CONNECTING...</div>
-        </div>
-        <button onclick="location.reload()" class="mt-6 text-zinc-500 text-xs hover:text-white transition-colors">BACK TO MAIN MENU</button>
-    </div>
-
-    <div id="ui" class="hidden flex flex-col items-center">
-        <div class="flex gap-12 mb-4 text-6xl font-mono font-black italic">
-            <div id="s1" class="text-blue-500">0</div>
-            <div class="text-zinc-800">/</div>
-            <div id="s2" class="text-red-500">0</div>
-        </div>
-        <canvas id="pong"></canvas>
-        <div class="mt-4 text-[10px] text-zinc-600 font-mono">FIRST TO 10 WINS</div>
-    </div>
 </body>
 </html>
