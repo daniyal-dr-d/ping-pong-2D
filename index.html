@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pro Pong 2D</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="tailwindcss.com"></script>
     <style>
         body { margin: 0; background: #020617; color: #fff; font-family: sans-serif; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; touch-action: none; }
         canvas { border: 2px solid #1e293b; background: #000; border-radius: 8px; box-shadow: 0 0 20px rgba(59, 130, 246, 0.2); max-width: 95vw; max-height: 70vh; object-fit: contain; }
@@ -91,23 +91,22 @@
         function update() {
             if (!running) return;
             
-            // Player 1 movement logic
+            // Player 1 Engine Block
             if (mode === 1) {
-                // Single Player: Accept BOTH W/S and Arrow keys for Player 1
-                if ((keys['KeyW'] || keys['ArrowUp']) && p1.y > 0) p1.y -= 8;
-                if ((keys['KeyS'] || keys['ArrowDown']) && p1.y < canvas.height - p1.h) p1.y += 8;
+                // Single Player mode: Move using BOTH Up/Down arrows and W/S keys
+                if ((keys['ArrowUp'] || keys['KeyW']) && p1.y > 0) p1.y -= 8;
+                if ((keys['ArrowDown'] || keys['KeyS']) && p1.y < canvas.height - p1.h) p1.y += 8;
             } else {
-                // Local Versus Mode: Split controls strictly
+                // Local Versus mode: Keeps Player 1 strictly bound to W and S
                 if (keys['KeyW'] && p1.y > 0) p1.y -= 8;
                 if (keys['KeyS'] && p1.y < canvas.height - p1.h) p1.y += 8;
             }
 
-            // Player 2 / AI logic
+            // Player 2 / AI Engine Block
             if (mode === 2) {
                 if (keys['ArrowUp'] && p2.y > 0) p2.y -= 8;
                 if (keys['ArrowDown'] && p2.y < canvas.height - p2.h) p2.y += 8;
             } else {
-                // AI Logic for Single Player
                 let target = ball.y - p2.h / 2;
                 p2.y += (target - p2.y) * 0.1;
             }
@@ -137,7 +136,6 @@
         function draw() {
             ctx.fillStyle = '#020617'; ctx.fillRect(0,0,800,450);
             ctx.strokeStyle = '#1e293b';
-            ctx.setLineDash([5, 15]);
             ctx.beginPath(); ctx.moveTo(400,0); ctx.lineTo(400,450); ctx.stroke();
             ctx.fillStyle = p1.color; ctx.fillRect(p1.x, p1.y, p1.w, p1.h);
             ctx.fillStyle = p2.color; ctx.fillRect(p2.x, p2.y, p2.w, p2.h);
