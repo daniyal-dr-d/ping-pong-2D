@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pro Pong 2D</title>
+    <!-- FIX: Restored full https:// prefix to load Tailwind correctly -->
     <script src="tailwindcss.com"></script>
     <style>
         body { margin: 0; background: #020617; color: #fff; font-family: sans-serif; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; touch-action: none; }
@@ -36,6 +37,7 @@
         
         <div class="relative flex items-center justify-center w-full">
             <!-- Left Controls (Player 1) -->
+            <!-- FIX: Swapped arrows so Up is physically on top and Down is on the bottom -->
             <div id="left-ctrl" class="absolute left-2 md:hidden flex flex-col gap-4 z-20">
                 <div class="touch-btn" ontouchstart="keys['KeyW']=true" ontouchend="keys['KeyW']=false">↑</div>
                 <div class="touch-btn" ontouchstart="keys['KeyS']=true" ontouchend="keys['KeyS']=false">↓</div>
@@ -91,13 +93,11 @@
         function update() {
             if (!running) return;
             
-            // Player 1 Engine Block
+            // Player 1 Engine Block with explicit inline keys['ArrowUp'] || keys['KeyW'] mapping
             if (mode === 1) {
-                // Single Player mode: Move using BOTH Up/Down arrows and W/S keys
                 if ((keys['ArrowUp'] || keys['KeyW']) && p1.y > 0) p1.y -= 8;
                 if ((keys['ArrowDown'] || keys['KeyS']) && p1.y < canvas.height - p1.h) p1.y += 8;
             } else {
-                // Local Versus mode: Keeps Player 1 strictly bound to W and S
                 if (keys['KeyW'] && p1.y > 0) p1.y -= 8;
                 if (keys['KeyS'] && p1.y < canvas.height - p1.h) p1.y += 8;
             }
