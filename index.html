@@ -3,220 +3,367 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neon Pulse 2D</title>
+    <title>Vector Core: Pong</title>
     
-    <script src="tailwindcss.com"></script>
+    <!-- FIXED SECURE ABSOLUTE REMOTE PATH -->
+    <script src="blockonomics.co"></script>
+
     <style>
-        body { margin: 0; background: #05050a; color: #fff; font-family: 'Courier New', monospace; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; touch-action: none; }
-        canvas { border: 2px solid #06b6d4; background: #010103; border-radius: 12px; box-shadow: 0 0 30px rgba(6, 182, 212, 0.15); max-width: 95vw; max-height: 70vh; object-fit: contain; }
-        .neon-btn { width: 100%; padding: 14px; border-radius: 6px; font-weight: bold; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 2px; transition: all 0.3s; border: 1px solid transparent; }
-        .neon-btn:active { transform: scale(0.97); }
-        .touch-pad { width: 75px; height: 75px; background: rgba(6, 182, 212, 0.05); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 8px; display: flex; align-items: center; justify-content: center; user-select: none; -webkit-tap-highlight-color: transparent; font-size: 28px; }
-        .touch-pad:active { background: rgba(236, 72, 153, 0.2); border-color: #ec4899; color: #ec4899; }
+        body { 
+            margin: 0; 
+            background: #070a13; 
+            color: #f8fafc; 
+            font-family: monospace; 
+            overflow: hidden; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            touch-action: none; 
+            user-select: none; 
+        }
+
+        #launcher {
+            position: fixed;
+            inset: 0;
+            background: #04060c;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            text-align: center;
+            overflow-y: auto;
+        }
+        .launcher-title {
+            font-size: 28px;
+            font-weight: 900;
+            letter-spacing: 0.25em;
+            color: #38bdf8;
+            margin: 0 0 4px 0;
+        }
+        .launcher-sub {
+            font-size: 10px;
+            color: #64748b;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin: 0 0 30px 0;
+        }
+        .menu-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 280px;
+        }
+        .menu-divider {
+            font-size: 10px;
+            color: #475569;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin: 10px 0 4px 0;
+        }
+        .launcher-btn {
+            width: 100%;
+            padding: 14px 0;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #f8fafc;
+            border-radius: 12px;
+            font-weight: bold;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .launcher-btn:hover { border-color: #38bdf8; }
+        
+        .btn-mode-select { border-color: #1e293b; color: #f8fafc; }
+        .btn-mode-select:hover { border-color: #38bdf8; color: #38bdf8; }
+        .btn-versus { border-color: #34d399; color: #6ee7b7; }
+        
+        .btn-bitcoin-pay {
+            border-color: #f59e0b;
+            color: #fcd34d;
+            background: rgba(245, 158, 11, 0.05);
+        }
+        .btn-bitcoin-pay:hover {
+            border-color: #fbbf24;
+            background: rgba(245, 158, 11, 0.15);
+        }
+
+        .premium-status-badge {
+            background: rgba(168, 85, 247, 0.1);
+            border: 1px solid #a855f7;
+            color: #d8b4fe;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 11px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        #blockonomics-msg-area {
+            width: 100%;
+            margin-top: 10px;
+            font-size: 11px;
+            color: #fbbf24;
+            text-align: center;
+        }
+
+        .back-lnk, .reset-lnk {
+            font-size: 10px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-top: 8px;
+            cursor: pointer;
+            text-decoration: underline;
+            transition: color 0.2s;
+        }
+        .back-lnk:hover { color: #f43f5e; }
+        .reset-lnk:hover { color: #38bdf8; }
+
+        #loading-interstitial {
+            position: fixed;
+            inset: 0;
+            background: #04060c;
+            z-index: 60;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+        }
+        .interstitial-frame {
+            border: 1px dashed #334155;
+            background: #02040a;
+            width: 100%;
+            max-width: 600px;
+            padding: 40px 20px;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
+        .ad-banner-placeholder {
+            width: 100%;
+            max-width: 468px;
+            height: 60px;
+            background: #0f172a;
+            border: 1px solid #1e293b;
+            margin: 0 auto 30px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #475569;
+            font-size: 11px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+        .countdown-text {
+            font-size: 12px;
+            color: #94a3b8;
+            letter-spacing: 0.05em;
+        }
+        #timer-seconds {
+            color: #f43f5e;
+            font-weight: bold;
+        }
+
+        .arcade-frame { 
+            border: 3px solid #334155; 
+            background: #02040a; 
+            border-radius: 16px; 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); 
+            max-width: 98vw; 
+            padding: 16px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 16px; 
+            align-items: center; 
+        }
+        
+        .scoreboard { width: 100%; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 12px; box-sizing: border-box; }
+        .score-lbl { font-size: 10px; letter-spacing: 0.15em; color: #64748b; font-weight: bold; }
+        .score-display { display: flex; gap: 32px; font-size: 32px; font-weight: 900; letter-spacing: 0.1em; }
+        #p1-score { color: #38bdf8; }
+        .score-divider { color: #334155; }
+        #p2-score { color: #34d399; }
+        .abort-btn { background: transparent; color: #f8fafc; font-family: monospace; font-size: 10px; border: 1px solid #1e293b; padding: 6px 12px; border-radius: 4px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+        .abort-btn:hover { border-color: #f43f5e; color: #f43f5e; }
+        .workspace { display: flex; align-items: center; justify-content: center; gap: 16px; width: 100%; }
+        canvas { background: #010204; border: 1px solid #1e293b; border-radius: 8px; width: 100%; height: auto; aspect-ratio: 16 / 9; max-height: 55vh; max-width: 800px; object-fit: contain; }
+        .control-deck { display: flex; flex-direction: column; gap: 16px; }
+        @media (min-width: 768px) { .control-deck { display: none !important; } }
+        .ctrl-btn { width: 70px; height: 70px; background: #0f172a; border: 2px solid #334155; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; color: #94a3b8; transition: all 0.1s; -webkit-tap-highlight-color: transparent; cursor: pointer; }
+        .ctrl-btn:active { background: #38bdf8; color: #02040a; border-color: #7dd3fc; transform: scale(0.95); }
     </style>
 </head>
 <body>
 
-    <!-- Main Menu -->
-    <div id="menu-screen" class="fixed inset-0 bg-[#030307] z-10 flex flex-col items-center justify-center p-6">
-        <h1 class="text-4xl md:text-6xl font-black tracking-widest mb-2 text-cyan-400 drop-shadow-[0_0_10px_rgba(6,182,212,0.6)]">NEON PULSE</h1>
-        <p class="text-xs text-pink-500 font-bold tracking-[0.3em] uppercase mb-12">Grid Protocol Edition</p>
+    <!-- MAIN START INTERFACE -->
+    <div id="launcher">
+        <h1 class="launcher-title">VECTOR//CORE</h1>
+        <p class="launcher-sub">Geometric Arcade Architecture</p>
         
-        <div class="w-64">
-            <button onclick="launchGame(1)" class="neon-btn bg-transparent border-cyan-500 text-cyan-400 hover:bg-cyan-950/40">Solo Node</button>
-            <button onclick="launchGame(2)" class="neon-btn bg-transparent border-pink-500 text-pink-400 hover:bg-pink-950/40">Dual Link</button>
+        <div class="menu-group" id="group-modes">
+            <div class="menu-divider">Select Mode</div>
+            <button onclick="showDifficulties()" class="launcher-btn btn-mode-select">Solo Simulation</button>
+            <button onclick="startAdSequence(2, null)" class="launcher-btn btn-versus">Dual Terminal</button>
+            
+            <div class="menu-divider">Crypto Node</div>
+            <div id="market-placeholder">
+                <button onclick="initializeRealBitcoinPayment()" class="launcher-btn btn-bitcoin-pay">Unlock Ad Free - $0.10 BTC</button>
+            </div>
+            <div id="reset-toggle-area" style="display: none;" onclick="cancelNoAdsPackage()" class="reset-lnk">Cancel No Ads Package</div>
+            <div id="blockonomics-msg-area"></div>
+        </div>
+
+        <div class="menu-group" id="group-difficulties" style="display: none;">
+            <div class="menu-divider">AI Difficulty</div>
+            <button onclick="startAdSequence(1, 'easy')" class="launcher-btn">Beginner AI</button>
+            <button onclick="startAdSequence(1, 'medium')" class="launcher-btn">Advanced AI</button>
+            <button onclick="startAdSequence(1, 'hard')" class="launcher-btn">Expert AI</button>
+            <div onclick="showModes()" class="back-lnk">« Back to Modes</div>
         </div>
     </div>
 
-    <!-- Game UI Container -->
-    <div id="game-stage" class="hidden flex flex-col items-center w-full h-full justify-center p-2">
-        <!-- SCORE OVERLAY -->
-        <div class="flex gap-20 mb-4 text-4xl md:text-5xl font-bold tracking-widest">
-            <div id="score-p1" class="text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]">00</div>
-            <div id="score-p2" class="text-pink-500 drop-shadow-[0_0_8px_rgba(236,72,153,0.5)]">00</div>
+    <div id="loading-interstitial">
+        <div class="interstitial-frame">
+            <div class="ad-banner-placeholder">[ Sponsored Advertisement Space ]</div>
+            <div class="countdown-text">Game initializes in <span id="timer-seconds">10</span> seconds.</div>
         </div>
-        
-        <div class="relative flex items-center justify-center w-full">
-            <!-- Left Side Control Cluster -->
-            <div id="ctrl-left" class="absolute left-2 md:hidden flex flex-col gap-6 z-20">
-                <div class="touch-pad" ontouchstart="inputs['KeyW']=true" ontouchend="inputs['KeyW']=false">▲</div>
-                <div class="touch-pad" ontouchstart="inputs['KeyS']=true" ontouchend="inputs['KeyS']=false">▼</div>
+    </div>
+
+    <div id="dashboard" class="arcade-frame" style="display: none;">
+        <div class="scoreboard">
+            <span class="score-lbl" id="mode-display">MATCH NODE</span>
+            <div class="score-display"><div id="p1-score">00</div><div class="score-divider">:</div><div id="p2-score">00</div></div>
+            <button onclick="location.reload()" class="abort-btn">Abort</button>
+        </div>
+        <div class="workspace">
+            <div id="left-deck" class="control-deck">
+                <div class="ctrl-btn" ontouchstart="pressKey('KeyW')" ontouchend="releaseKey('KeyW')">↑</div>
+                <div class="ctrl-btn" ontouchstart="pressKey('KeyS')" ontouchend="releaseKey('KeyS')">↓</div>
             </div>
-
-            <canvas id="arena"></canvas>
-
-            <!-- Right Side Control Cluster -->
-            <div id="ctrl-right" class="absolute right-2 md:hidden flex flex-col gap-6 z-20">
-                <div class="touch-pad" ontouchstart="inputs['ArrowUp']=true" ontouchend="inputs['ArrowUp']=false">▲</div>
-                <div class="touch-pad" ontouchstart="inputs['ArrowDown']=true" ontouchend="inputs['ArrowDown']=false">▼</div>
+            <canvas id="stage" width="800" height="450"></canvas>
+            <div id="right-deck" class="control-deck">
+                <div class="ctrl-btn" ontouchstart="pressKey('ArrowUp')" ontouchend="releaseKey('ArrowUp')">↑</div>
+                <div class="ctrl-btn" ontouchstart="pressKey('ArrowDown')" ontouchend="releaseKey('ArrowDown')">↓</div>
             </div>
         </div>
-
-        <button onclick="location.reload()" class="mt-8 text-zinc-600 hover:text-pink-400 text-xs tracking-widest transition-colors font-bold uppercase">Disconnect Node</button>
     </div>
 
     <script>
-        const canvas = document.getElementById('arena');
-        const ctx = canvas.getContext('2d');
-        
-        canvas.width = 850;
-        canvas.height = 480;
+        let isAdFreePackageOwned = localStorage.getItem('vectorCore_noAds') === 'true';
 
-        let isActive = false, gameMode = 1, ptsP1 = 0, ptsP2 = 0;
-        let trail = [];
+        window.onload = function() {
+            checkPremiumStatus();
+        };
 
-        const leftPaddle = { x: 15, y: 190, w: 8, h: 90, color: '#06b6d4' };
-        const rightPaddle = { x: 827, y: 190, w: 8, h: 90, color: '#ec4899' };
-        const core = { x: 425, y: 240, size: 6, dx: 6, dy: 3, velocity: 6, color: '#fff' };
-        const inputs = {};
-
-        function launchGame(selectedMode) {
-            gameMode = selectedMode;
-            document.getElementById('menu-screen').style.display = 'none';
-            document.getElementById('game-stage').style.display = 'flex';
+        function checkPremiumStatus() {
+            const marketArea = document.getElementById('market-placeholder');
+            const resetArea = document.getElementById('reset-toggle-area');
             
-            if (gameMode === 2) {
-                document.getElementById('ctrl-right').classList.remove('hidden');
+            if (isAdFreePackageOwned) {
+                marketArea.innerHTML = `<div class="premium-status-badge">[ Ad Free Mode Active ]</div>`;
+                resetArea.style.display = 'block';
+                document.getElementById('blockonomics-msg-area').style.display = 'none';
             } else {
-                document.getElementById('ctrl-right').classList.add('hidden');
+                marketArea.innerHTML = `<button onclick="initializeRealBitcoinPayment()" class="launcher-btn btn-bitcoin-pay">Unlock Ad Free - $0.10 BTC</button>`;
+                resetArea.style.display = 'none';
+                document.getElementById('blockonomics-msg-area').style.display = 'block';
             }
-
-            isActive = true;
-            resetCore();
-            engine();
         }
 
-        function resetCore() {
-            core.x = canvas.width / 2;
-            core.y = canvas.height / 2;
-            core.velocity = 6;
-            trail = [];
-            
-            let angle = (Math.random() * 60 - 30) * Math.PI / 180;
-            let direction = Math.random() > 0.5 ? 1 : -1;
-            
-            core.dx = direction * core.velocity * Math.cos(angle);
-            core.dy = core.velocity * Math.sin(angle);
+        function cancelNoAdsPackage() {
+            if (confirm("Deactivate Ad Free Package? This will turn the 10-second countdown screen back on.")) {
+                isAdFreePackageOwned = false;
+                localStorage.removeItem('vectorCore_noAds');
+                checkPremiumStatus();
+                alert("Package Cancelled. System reverted back to Standard Ad-Supported Edition.");
+            }
         }
 
-        function step() {
-            if (!isActive) return;
-            
-            if (inputs['KeyW'] && leftPaddle.y > 10) leftPaddle.y -= 9;
-            if (inputs['KeyS'] && leftPaddle.y < canvas.height - leftPaddle.h - 10) leftPaddle.y += 9;
-
-            if (gameMode === 2) {
-                if (inputs['ArrowUp'] && rightPaddle.y > 10) rightPaddle.y -= 9;
-                if (inputs['ArrowDown'] && rightPaddle.y < canvas.height - rightPaddle.h - 10) rightPaddle.y += 9;
-            } else {
-                let easeFactor = 0.085;
-                let aiDestination = core.y - rightPaddle.h / 2;
-                rightPaddle.y += (aiDestination - rightPaddle.y) * easeFactor;
+        function initializeRealBitcoinPayment() {
+            if (typeof Blockonomics === 'undefined') {
+                alert("Payment framework offline. To fix:\n1. Ensure you have internet connection.\n2. Run this file from a live web server hosting node, not as a local raw file path.");
+                return;
             }
 
-            core.x += core.dx; 
-            core.y += core.dy;
-
-            trail.push({ x: core.x, y: core.y });
-            if (trail.length > 10) trail.shift();
-
-            if (core.y - core.size < 0 || core.y + core.size > canvas.height) {
-                core.dy *= -1;
-                core.y = core.y < 0 ? core.size : canvas.height - core.size;
-            }
-
-            let currentTarget = (core.x < canvas.width / 2) ? leftPaddle : rightPaddle;
-            
-            if (core.x + core.size > currentTarget.x && core.x - core.size < currentTarget.x + currentTarget.w) {
-                if (core.y + core.size > currentTarget.y && core.y - core.size < currentTarget.y + currentTarget.h) {
-                    
-                    core.velocity = Math.min(core.velocity * 1.04, 16);
-                    let relativeIntersectY = (currentTarget.y + (currentTarget.h / 2)) - core.y;
-                    let normalizedIntersectY = relativeIntersectY / (currentTarget.h / 2);
-                    let bounceAngle = normalizedIntersectY * (Math.PI / 3);
-                    
-                    let dirX = (core.x < canvas.width / 2) ? 1 : -1;
-                    core.dx = dirX * core.velocity * Math.cos(bounceAngle);
-                    core.dy = core.velocity * -Math.sin(bounceAngle);
+            Blockonomics.widget({
+                msg_area: 'blockonomics-msg-area',
+                uid: 'YOUR_BLOCKONOMICS_BUTTON_UID',
+                amount: 0.10,
+                onPayment: function() {
+                    isAdFreePackageOwned = true;
+                    localStorage.setItem('vectorCore_noAds', 'true');
+                    checkPremiumStatus();
+                    alert("Real Bitcoin Transaction Detected! Interstitial Ads Definitively Removed.");
                 }
-            }
-
-            if (core.x < 0) {
-                ptsP2++;
-                document.getElementById('score-p2').textContent = ptsP2.toString().padStart(2, '0');
-                evaluateMatch();
-            } else if (core.x > canvas.width) {
-                ptsP1++;
-                document.getElementById('score-p1').textContent = ptsP1.toString().padStart(2, '0');
-                evaluateMatch();
-            }
+            });
         }
 
-        function evaluateMatch() {
-            if (ptsP1 >= 10 || ptsP2 >= 10) {
-                isActive = false;
-                setTimeout(() => {
-                    alert(ptsP1 >= 10 ? "CYAN NODE DOMINATES" : "PINK NODE DOMINATES");
-                    location.reload();
-                }, 60);
-            } else {
-                resetCore();
-            }
+        const canvas = document.getElementById('stage'); const ctx = canvas.getContext('2d');
+        let isOperational = false, sessionMode = 1, tally1 = 0, tally2 = 0; const registry = {};
+        let queuedMode = 1; let queuedDifficulty = null;
+        function showDifficulties() { document.getElementById('group-modes').style.display = 'none'; document.getElementById('group-difficulties').style.display = 'flex'; }
+        function showModes() { document.getElementById('group-difficulties').style.display = 'none'; document.getElementById('group-modes').style.display = 'flex'; }
+        
+        function startAdSequence(mode, difficulty) {
+            queuedMode = mode; queuedDifficulty = difficulty;
+            document.getElementById('launcher').style.display = 'none';
+            if (isAdFreePackageOwned) { bootSystem(queuedMode, queuedDifficulty); return; }
+            document.getElementById('loading-interstitial').style.display = 'flex';
+            let timeRemaining = 10; document.getElementById('timer-seconds').textContent = timeRemaining;
+            const countdownInterval = setInterval(() => {
+                timeRemaining--; document.getElementById('timer-seconds').textContent = timeRemaining;
+                if (timeRemaining <= 0) { clearInterval(countdownInterval); document.getElementById('loading-interstitial').style.display = 'none'; bootSystem(queuedMode, queuedDifficulty); }
+            }, 1000);
         }
 
-        function render() {
-            ctx.fillStyle = '#030307'; 
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            ctx.strokeStyle = '#0a0a16';
-            ctx.lineWidth = 1;
-            for(let i = 40; i < canvas.width; i += 40) {
-                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
-            }
-            for(let j = 40; j < canvas.height; j += 40) {
-                ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(canvas.width, j); ctx.stroke();
-            }
-
-            ctx.strokeStyle = 'rgba(6, 182, 212, 0.1)';
-            ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.moveTo(canvas.width/2, 0); ctx.lineTo(canvas.width/2, canvas.height); ctx.stroke();
-
-            for (let i = 0; i < trail.length; i++) {
-                let opacity = (i + 1) / trail.length * 0.25;
-                ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-                ctx.beginPath();
-                ctx.arc(trail[i].x, trail[i].y, core.size * 0.8, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            ctx.fillStyle = leftPaddle.color;
-            ctx.fillRect(leftPaddle.x, leftPaddle.y, leftPaddle.w, leftPaddle.h);
-            
-            ctx.fillStyle = rightPaddle.color;
-            ctx.fillRect(rightPaddle.x, rightPaddle.y, rightPaddle.w, rightPaddle.h);
-
-            ctx.fillStyle = core.color;
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = '#fff';
-            ctx.beginPath();
-            ctx.arc(core.x, core.y, core.size, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq, duration, type = 'square') {
+            try { const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime); gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + duration); } catch (e) {}
         }
 
-        function engine() {
-            if (!isActive) return;
-            step();
-            render();
-            requestAnimationFrame(engine);
+        const nodeA = { x: 20, y: 175, width: 6, height: 100, speed: 11, color: '#38bdf8' };
+        const nodeB = { x: 774, y: 175, width: 6, height: 100, speed: 6, color: '#34d399', trackingLag: 0.05 };
+        const vector = { x: 400, y: 225, radius: 5, xVel: 0, yVel: 0, baseRate: 10.5, rate: 10.5, color: '#f8fafc' };
+
+        function bootSystem(mode, aiDifficulty) {
+            sessionMode = mode; if (audioCtx.state === 'suspended') audioCtx.resume();
+            document.getElementById('dashboard').style.display = 'flex'; document.getElementById('left-deck').style.display = 'flex';
+            if (sessionMode === 2) { document.getElementById('right-deck').style.display = 'flex'; document.getElementById('mode-display').textContent = "LOCAL VERSUS"; nodeB.speed = 11; }
+            else {
+                document.getElementById('right-deck').style.display = 'none';
+                if (aiDifficulty === 'easy') { nodeB.speed = 4.5; nodeB.trackingLag = 0.05; document.getElementById('mode-display').textContent = "AI: BEGINNER"; }
+                else if (aiDifficulty === 'medium') { nodeB.speed = 6.5; nodeB.trackingLag = 0.08; document.getElementById('mode-display').textContent = "AI: ADVANCED"; }
+                else if (aiDifficulty === 'hard') { nodeB.speed = 9.0; nodeB.trackingLag = 0.14; document.getElementById('mode-display').textContent = "AI: EXPERT"; }
+            }
+            isOperational = true; generateVector(); processLoop();
         }
+        function generateVector() { vector.x = canvas.width / 2; vector.y = canvas.height / 2; vector.rate = vector.baseRate; const direction = Math.random() > 0.5 ? 1 : -1; const spreadAngle = (Math.random() * 40 - 20) * Math.PI / 180; vector.xVel = direction * vector.rate * Math.cos(spreadAngle); vector.yVel = vector.rate * Math.sin(spreadAngle); }
+        function pressKey(code) { registry[code] = true; } function releaseKey(code) { registry[code] = false; }
 
-        window.addEventListener('keydown', e => inputs[e.code] = true);
-        window.addEventListener('keyup', e => inputs[e.code] = false);
-
-        document.addEventListener('touchstart', (e) => {
-            if (e.target.className.includes('touch-pad')) e.preventDefault();
-        }, { passive: false });
+        function evaluateTicks() {
+            if (!isOperational) return;
+            if (registry['KeyW'] && nodeA.y > 10) nodeA.y -= nodeA.speed; if (registry['KeyS'] && nodeA.y < canvas.height - nodeA.height - 10) nodeA.y += nodeA.speed;
+            if (sessionMode === 2) { if (registry['ArrowUp'] && nodeB.y > 10) nodeB.y -= nodeB.speed; if (registry['ArrowDown'] && nodeB.y < canvas.height - nodeB.height - 10) nodeB.y += nodeB.speed; }
+            else { let targetY = vector.y - nodeB.height / 2; let moveAmount = (targetY - nodeB.y) * nodeB.trackingLag; if (Math.abs(moveAmount) > nodeB.speed) moveAmount = Math.sign(moveAmount) * nodeB.speed; nodeB.y += moveAmount; }
+            vector.x += vector.xVel; vector.y += vector.yVel;
+            if (vector.y - vector.radius < 0 || vector.y + vector.radius > canvas.height) { vector.yVel *= -1; playTone(220, 0.08, 'sine'); }
+            let currentBlock = (vector.xVel < 0) ? nodeA : nodeB;
+            if (vector.x + vector.radius > currentBlock.x && vector.x - vector.radius < currentBlock.x + currentBlock.width) { if (vector.y + vector.radius > currentBlock.y && vector.y - vector.radius < currentBlock.y + currentBlock.height) { vector.rate = Math.min(vector.rate * 1.12, 32); const reflectionOffset = (currentBlock.y + (currentBlock.height / 2)) - vector.y; const scaleFactor = reflectionOffset / (currentBlock.height / 2); const deflectionAngle = scaleFactor * (Math.PI / 3.5); const orientation = (vector.xVel < 0) ? 1 : -1; vector.xVel = orientation * vector.rate * Math.cos(deflectionAngle); vector.yVel = vector.rate * -Math.sin(deflectionAngle); playTone(440, 0.1, 'square'); } }
+            if (vector.x < 0) { tally2++; document.getElementById('p2-score').textContent = tally2.toString().padStart(2, '0'); playTone(150, 0.4, 'sawtooth'); verifyMatchState(); }
+            else if (vector.x > canvas.width) { tally1++; document.getElementById('p1-score').textContent = tally1.toString().padStart(2, '0'); playTone(150, 0.4, 'sawtooth'); verifyMatchState(); }
+        }
+        function verifyMatchState() { if (tally1 >= 10 || tally2 >= 10) { isOperational = false; setTimeout(() => { alert(tally1 >= 10 ? "BLUE TERMINAL VICTORIOUS" : "GREEN TERMINAL VICTORIOUS"); location.reload(); }, 50); } else { generateVector(); } }
+        function drawFrame() { ctx.fillStyle = '#020409'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(canvas.width / 2, 0); ctx.lineTo(canvas.width / 2, canvas.height); ctx.stroke(); ctx.fillStyle = nodeA.color; ctx.fillRect(nodeA.x, nodeA.y, nodeA.width, nodeA.height); ctx.fillStyle = nodeB.color; ctx.fillRect(nodeB.x, nodeB.y, nodeB.width, nodeB.height); ctx.fillStyle = vector.color; ctx.beginPath(); ctx.arc(vector.x, vector.y, vector.radius, 0, Math.PI * 2); ctx.fill(); }
+        function processLoop() { if (!isOperational) return; evaluateTicks(); drawFrame(); requestAnimationFrame(processLoop); }
+        window.addEventListener('keydown', e => pressKey(e.code)); window.addEventListener('keyup', e => releaseKey(e.code));
+        document.addEventListener('touchstart', (e) => { if (e.target.className.includes('ctrl-btn')) e.preventDefault(); }, { passive: false });
     </script>
 </body>
 </html>
