@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Vector Core: Pong</title>
     
-    <!-- FIXED SECURE ABSOLUTE REMOTE PATH -->
+    <!-- FIXED ABSOLUTE SECURE REMOTE PATH -->
     <script src="blockonomics.co"></script>
 
     <style>
@@ -262,6 +262,7 @@
             checkPremiumStatus();
         };
 
+        // UI Panel View Updates
         function checkPremiumStatus() {
             const marketArea = document.getElementById('market-placeholder');
             const resetArea = document.getElementById('reset-toggle-area');
@@ -288,13 +289,13 @@
 
         function initializeRealBitcoinPayment() {
             if (typeof Blockonomics === 'undefined') {
-                alert("Payment framework offline. To fix:\n1. Ensure you have internet connection.\n2. Run this file from a live web server hosting node, not as a local raw file path.");
+                alert("Payment framework offline. Verify network script connection parameters.");
                 return;
             }
 
             Blockonomics.widget({
                 msg_area: 'blockonomics-msg-area',
-                uid: 'YOUR_BLOCKONOMICS_BUTTON_UID',
+                uid: 'YOUR_BLOCKONOMICS_BUTTON_UID', // REMEMBER: Replace this string value with your own merchant account store token ID!
                 amount: 0.10,
                 onPayment: function() {
                     isAdFreePackageOwned = true;
