@@ -111,9 +111,10 @@
 
             let pad = (ball.x < 400) ? p1 : p2;
             if (ball.x > pad.x && ball.x < pad.x + pad.w && ball.y > pad.y && ball.y < pad.y + pad.h) {
-                ball.vx *= -1.05;
+                // Instantly flip horizontal movement and safely scale speed vector 
+                ball.vx = (ball.vx < 0 ? 1 : -1) * Math.abs(ball.vx) * 1.05;
                 let hitPos = (ball.y - (pad.y + pad.h/2)) / (pad.h/2);
-                ball.vy = hitPos * ball.speed;
+                ball.vy = hitPos * Math.abs(ball.vx);
             }
 
             if (ball.x < 0) { score2++; document.getElementById('s2').textContent = score2; resetBall(); }
